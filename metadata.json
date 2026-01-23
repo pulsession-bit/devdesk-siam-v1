@@ -1,0 +1,8 @@
+{
+  "name": "Siam Visa Pro - Concord Executive",
+  "description": "An intelligent Visa Audit Agent for Thailand, using Gemini to scan documents, score compliance, and ensure 100% acceptance rates.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ]
+}

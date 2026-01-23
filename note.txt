@@ -1,0 +1,23 @@
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCGtvB1ATY10mLI74kuInjvIxbaawse1WU",
+  authDomain: "call-center-lead-dc450.firebaseapp.com",
+  projectId: "call-center-lead-dc450",
+  storageBucket: "call-center-lead-dc450.firebasestorage.app",
+  messagingSenderId: "622593516264",
+  appId: "1:622593516264:web:0785c626d45529f3595f5d",
+  measurementId: "G-SPPNR4KM76"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+AIzaSyCT0ynrQ6UPcLbgZsHS4MyyBw7u9_tWSek

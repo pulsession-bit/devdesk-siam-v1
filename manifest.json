@@ -1,0 +1,23 @@
+
+{
+  "short_name": "SiamVisa",
+  "name": "Siam Visa Pro",
+  "description": "L'Intelligence Artificielle dédiée à votre expatriation en Thaïlande.",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/9370/9370270.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/9370/9370270.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#051229",
+  "background_color": "#051229",
+  "orientation": "portrait"
+}

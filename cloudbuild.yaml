@@ -1,0 +1,29 @@
+
+steps:
+  # 1. Build de l'image Docker
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/siam-visa-pro:$COMMIT_SHA', '.']
+
+  # 2. Push de l'image vers Google Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/siam-visa-pro:$COMMIT_SHA']
+
+  # 3. Déploiement sur Google Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'siam-visa-pro'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/siam-visa-pro:$COMMIT_SHA'
+      - '--region'
+      - 'europe-west1' # Changez la région si nécessaire
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '8080'
+
+images:
+  - 'gcr.io/$PROJECT_ID/siam-visa-pro:$COMMIT_SHA'
