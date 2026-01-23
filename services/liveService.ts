@@ -32,45 +32,45 @@ const navigationTool: FunctionDeclaration = {
 
 export class LiveAgent {
   private static instance: LiveAgent;
-  private ai: GoogleGenAI | null = null; 
+  private ai: GoogleGenAI | null = null;
   private inputAudioContext: AudioContext | null = null;
   private outputAudioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
   private sessionPromise: Promise<any> | null = null;
   private nextStartTime: number = 0;
   private sources: Set<AudioBufferSourceNode> = new Set();
-  public isConnected: boolean = false; 
+  public isConnected: boolean = false;
   private processor: ScriptProcessorNode | null = null;
   private inputSource: MediaStreamAudioSourceNode | null = null;
   private analyser: AnalyserNode | null = null;
-  
+
   private transcriptionHistory: TranscriptItem[] = [];
   private currentInputTranscription: string = '';
   private currentOutputTranscription: string = '';
-  
+
   // Keep-Alive & Context Logic
   private keepAliveInterval: any = null;
   private activeContext: LiveContext | undefined;
   private isRefreshing: boolean = false;
   private readonly REFRESH_INTERVAL_MS = 90 * 1000; // 90 Secondes pour contourner les limites WebSocket
-  
+
   // State for user callback logic
   private sessionCount: number = 0; // Compteur de sessions "humaines" (appels volontaires)
-  
+
   // Support multi-listeners
   private transcriptListeners: Set<(update: TranscriptUpdate) => void> = new Set();
   private statusListeners: Set<(status: string) => void> = new Set();
-  private navigationListeners: Set<(page: string) => void> = new Set(); 
+  private navigationListeners: Set<(page: string) => void> = new Set();
 
   private constructor() {
     if (process.env.API_KEY) {
-        try {
-            this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        } catch (e) {
-            console.error("LiveAgent Init Error:", e);
-        }
+      try {
+        this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      } catch (e) {
+        console.error("LiveAgent Init Error:", e);
+      }
     } else {
-        console.warn("LiveAgent: API Key missing. Live features will be disabled.");
+      console.warn("LiveAgent: API Key missing. Live features will be disabled.");
     }
   }
 
@@ -111,11 +111,11 @@ export class LiveAgent {
   public async sendContextMessage(text: string) {
     if (!this.sessionPromise) return;
     try {
-        const session = await this.sessionPromise;
-        // Correction : sendRealtimeInput attend un objet RealtimeInput { parts: [...] } ou { media: ... }
-        await session.sendRealtimeInput({ parts: [{ text: `[CONTEXT UPDATE]: ${text}` }] });
+      const session = await this.sessionPromise;
+      // Correction : sendRealtimeInput attend un objet RealtimeInput { parts: [...] } ou { media: ... }
+      await session.sendRealtimeInput({ parts: [{ text: `[CONTEXT UPDATE]: ${text}` }] });
     } catch (e) {
-        console.warn("Failed to send context update", e);
+      console.warn("Failed to send context update", e);
     }
   }
 
@@ -127,50 +127,50 @@ export class LiveAgent {
   async connect(contextData?: LiveContext, preservedHistory?: string) {
     if (this.isConnected && !this.isRefreshing) {
       this.notifyStatus('connected');
-      return; 
+      return;
     }
 
     // Incrémentation du compteur de session UNIQUEMENT si c'est un appel volontaire (pas une reconnexion technique)
     if (!preservedHistory) {
-        this.sessionCount++;
+      this.sessionCount++;
     }
 
     // Sauvegarde du contexte pour les reconnexions futures
     if (contextData) {
-        this.activeContext = contextData;
+      this.activeContext = contextData;
     }
 
     if (!this.ai) {
-        console.error("Cannot connect LiveAgent: GoogleGenAI client not initialized");
-        this.notifyStatus('error');
-        return;
+      console.error("Cannot connect LiveAgent: GoogleGenAI client not initialized");
+      this.notifyStatus('error');
+      return;
     }
-    
+
     // Si ce n'est pas un rafraîchissement transparent, on notifie l'UI
     if (!this.isRefreshing) {
-        this.notifyStatus('connecting');
+      this.notifyStatus('connecting');
     }
-    
+
     // Initialisation Audio Contexts
     if (!this.inputAudioContext || this.inputAudioContext.state === 'closed') {
-        this.inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+      this.inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
     }
     if (!this.outputAudioContext || this.outputAudioContext.state === 'closed') {
-        this.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+      this.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
     }
-    
+
     this.nextStartTime = this.outputAudioContext.currentTime;
 
     // Analyser setup
     if (!this.analyser) {
-        this.analyser = this.outputAudioContext.createAnalyser();
-        this.analyser.fftSize = 256;
-        this.analyser.connect(this.outputAudioContext.destination);
+      this.analyser = this.outputAudioContext.createAnalyser();
+      this.analyser.fftSize = 256;
+      this.analyser.connect(this.outputAudioContext.destination);
     }
 
     try {
       if (!this.mediaStream) {
-          this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
     } catch (e) {
       this.notifyStatus('error_mic');
@@ -183,18 +183,18 @@ export class LiveAgent {
     const score = this.activeContext?.result?.confidence_score || 0;
 
     let systemInstruction = SYSTEM_PROMPT + `\n\nTu es Supansa de C.I.M. Visas. Ta voix est douce, posée, professionnelle.`;
-    
+
     if (this.activeContext) {
-        systemInstruction += `\n\nDONNÉES DOSSIER: Projet="${this.activeContext.context.projectDescription}", Nationalité=${this.activeContext.context.nationality}, Profession=${this.activeContext.context.profession}, Visa=${visaType}, Score=${score}%.`;
+      systemInstruction += `\n\nDONNÉES DOSSIER: Projet="${this.activeContext.context.projectDescription}", Nationalité=${this.activeContext.context.nationality}, Profession=${this.activeContext.context.profession}, Visa=${visaType}, Score=${score}%.`;
     }
 
     // SCÉNARIO 1 : RECONNEXION TECHNIQUE (Keep-Alive invisible)
     if (preservedHistory) {
-        systemInstruction += `\n\n[HISTORIQUE TECHNIQUE - REPRISE IMMEDIATE]\nLe système audio a redémarré. Continue la phrase ou la conversation EXACTEMENT où elle s'est arrêtée. Ne salue pas à nouveau.\n\nHistorique récent:\n${preservedHistory}`;
-    } 
+      systemInstruction += `\n\n[HISTORIQUE TECHNIQUE - REPRISE IMMEDIATE]\nLe système audio a redémarré. Continue la phrase ou la conversation EXACTEMENT où elle s'est arrêtée. Ne salue pas à nouveau.\n\nHistorique récent:\n${preservedHistory}`;
+    }
     // SCÉNARIO 2 : LE CLIENT RAPPELLE APRÈS AVOIR RACCROCHÉ (Session > 1)
     else if (this.sessionCount > 1) {
-        systemInstruction += `\n\n[SCÉNARIO: LE CLIENT RAPPELLE]
+      systemInstruction += `\n\n[SCÉNARIO: LE CLIENT RAPPELLE]
         Le client ${userName} te rappelle après une coupure ou une fin de conversation précédente.
         1. Ne te présente pas entièrement ("Je suis Supansa..."), tu l'as déjà fait.
         2. Dis plutôt : "Re-bonjour ${userName}. Je vois que vous nous rappelez."
@@ -204,7 +204,7 @@ export class LiveAgent {
     }
     // SCÉNARIO 3 : PREMIER APPEL
     else {
-        systemInstruction += `\n\n[SCÉNARIO: PREMIER APPEL]
+      systemInstruction += `\n\n[SCÉNARIO: PREMIER APPEL]
         Accueille ${userName} chaleureusement. Présente-toi brièvement. Guide-le sur son audit en cours.`;
     }
 
@@ -212,12 +212,12 @@ export class LiveAgent {
       this.sessionPromise = this.ai.live.connect({
         model: 'gemini-2.5-flash-native-audio-preview-09-2025',
         config: {
-          responseModalalities: [Modality.AUDIO], 
+          responseModalities: [Modality.AUDIO],
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } },
           },
           tools: [{ functionDeclarations: [navigationTool] }],
-          inputAudioTranscription: {}, 
+          inputAudioTranscription: {},
           outputAudioTranscription: {},
           systemInstruction: systemInstruction,
         },
@@ -231,17 +231,17 @@ export class LiveAgent {
           },
           onmessage: async (message: LiveServerMessage) => this.handleServerMessage(message),
           onclose: () => {
-             // Si on est en train de rafraîchir volontairement, on ignore la fermeture
-             if (!this.isRefreshing) {
-                 this.notifyStatus('disconnected');
-                 this.disconnect(false); // Clean disconnect
-             }
+            // Si on est en train de rafraîchir volontairement, on ignore la fermeture
+            if (!this.isRefreshing) {
+              this.notifyStatus('disconnected');
+              this.disconnect(false); // Clean disconnect
+            }
           },
           onerror: (e) => {
             console.error("Live Error", e);
             // Tentative de reconnexion auto si erreur inattendue
             if (!this.isRefreshing) {
-                setTimeout(() => this.performHandover(), 1000);
+              setTimeout(() => this.performHandover(), 1000);
             }
           }
         }
@@ -255,42 +255,42 @@ export class LiveAgent {
    * Mécanisme de Keep-Alive : Coupe et relance la session avant le timeout
    */
   private startKeepAlive() {
-      if (this.keepAliveInterval) clearInterval(this.keepAliveInterval);
-      this.keepAliveInterval = setInterval(() => {
-          console.log("LiveAgent: 90s interval reached. Performing session handover...");
-          this.performHandover();
-      }, this.REFRESH_INTERVAL_MS);
+    if (this.keepAliveInterval) clearInterval(this.keepAliveInterval);
+    this.keepAliveInterval = setInterval(() => {
+      console.log("LiveAgent: 90s interval reached. Performing session handover...");
+      this.performHandover();
+    }, this.REFRESH_INTERVAL_MS);
   }
 
   /**
    * Effectue la passation de session (Handover)
    */
   private async performHandover() {
-      this.isRefreshing = true;
-      const currentHistory = this.getFormattedTranscript() || "";
-      
-      // 1. Fermer la session actuelle
-      if (this.sessionPromise) {
-          if (this.processor) {
-              this.processor.disconnect();
-              this.processor = null;
-          }
-      }
+    this.isRefreshing = true;
+    const currentHistory = this.getFormattedTranscript() || "";
 
-      // 2. Relancer immédiatement avec l'historique
-      await this.connect(undefined, currentHistory);
+    // 1. Fermer la session actuelle
+    if (this.sessionPromise) {
+      if (this.processor) {
+        this.processor.disconnect();
+        this.processor = null;
+      }
+    }
+
+    // 2. Relancer immédiatement avec l'historique
+    await this.connect(undefined, currentHistory);
   }
 
   private startAudioInput() {
     if (!this.inputAudioContext || !this.mediaStream || !this.sessionPromise) return;
-    
+
     // Nettoyage préventif
-    if (this.inputSource) { try { this.inputSource.disconnect(); } catch(e){} }
-    if (this.processor) { try { this.processor.disconnect(); } catch(e){} }
+    if (this.inputSource) { try { this.inputSource.disconnect(); } catch (e) { } }
+    if (this.processor) { try { this.processor.disconnect(); } catch (e) { } }
 
     this.inputSource = this.inputAudioContext.createMediaStreamSource(this.mediaStream);
     this.processor = this.inputAudioContext.createScriptProcessor(4096, 1, 1);
-    
+
     this.processor.onaudioprocess = (e) => {
       // Si on est en cours de refresh, on n'envoie pas de données pour éviter les conflits
       if (this.isRefreshing) return;
@@ -306,25 +306,25 @@ export class LiveAgent {
 
   private async handleServerMessage(message: LiveServerMessage) {
     const serverContent = message.serverContent;
-    
+
     if (message.toolCall) {
-        const functionCalls = message.toolCall.functionCalls;
-        if (functionCalls && functionCalls.length > 0) {
-            const call = functionCalls[0];
-            if (call.name === 'navigateToPage') {
-                const page = (call.args as any).page;
-                this.notifyNavigation(page);
-                this.sessionPromise?.then(session => {
-                    session.sendToolResponse({
-                        functionResponses: [{
-                            id: call.id,
-                            name: call.name,
-                            response: { result: `User is now on ${page} page.` }
-                        }]
-                    });
-                });
-            }
+      const functionCalls = message.toolCall.functionCalls;
+      if (functionCalls && functionCalls.length > 0) {
+        const call = functionCalls[0];
+        if (call.name === 'navigateToPage') {
+          const page = (call.args as any).page;
+          this.notifyNavigation(page);
+          this.sessionPromise?.then(session => {
+            session.sendToolResponse({
+              functionResponses: [{
+                id: call.id,
+                name: call.name,
+                response: { result: `User is now on ${page} page.` }
+              }]
+            });
+          });
         }
+      }
     }
 
     if (serverContent?.outputTranscription) {
@@ -373,7 +373,7 @@ export class LiveAgent {
     this.analyser.getByteFrequencyData(dataArray);
     return dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
   }
-  
+
   getFormattedTranscript(): string | null {
     const history = [...this.transcriptionHistory];
     if (this.currentInputTranscription) history.push({ role: 'user', text: this.currentInputTranscription });
@@ -388,10 +388,10 @@ export class LiveAgent {
   disconnect(clearListeners: boolean = false) {
     this.isConnected = false;
     this.isRefreshing = false;
-    
+
     if (this.keepAliveInterval) {
-        clearInterval(this.keepAliveInterval);
-        this.keepAliveInterval = null;
+      clearInterval(this.keepAliveInterval);
+      this.keepAliveInterval = null;
     }
 
     if (this.mediaStream) {
@@ -405,29 +405,29 @@ export class LiveAgent {
     }
 
     if (this.inputAudioContext && this.inputAudioContext.state !== 'closed') {
-      try { this.inputAudioContext.close(); } catch (e) {}
+      try { this.inputAudioContext.close(); } catch (e) { }
     }
     this.inputAudioContext = null;
 
     this.stopAllAudio();
-    
+
     if (this.outputAudioContext && this.outputAudioContext.state !== 'closed') {
-      try { this.outputAudioContext.close(); } catch (e) {}
+      try { this.outputAudioContext.close(); } catch (e) { }
     }
     this.outputAudioContext = null;
 
     this.sessionPromise = null;
     this.notifyStatus('disconnected');
-    
+
     if (clearListeners) {
-        this.statusListeners.clear();
-        this.transcriptListeners.clear();
-        this.navigationListeners.clear();
+      this.statusListeners.clear();
+      this.transcriptListeners.clear();
+      this.navigationListeners.clear();
     }
   }
 
   private stopAllAudio() {
-    this.sources.forEach(s => { try { s.stop(); } catch(e) {} });
+    this.sources.forEach(s => { try { s.stop(); } catch (e) { } });
     this.sources.clear();
   }
 
