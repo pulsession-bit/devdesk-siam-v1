@@ -307,7 +307,13 @@ export const es = {
             btn_home: "Volver al Inicio",
             ref_file: "Ref. Expediente",
             summary_label: "Resumen",
-            whatsapp_button: "WhatsApp Experto Directo"
+            whatsapp_button: "WhatsApp Experto Directo",
+            contact_methods: {
+                whatsapp: "WhatsApp",
+                phone: "Tel",
+                email: "Email",
+                zoom: "Zoom"
+            }
         },
         chat: {
             save_required: "Guardado Requerido",

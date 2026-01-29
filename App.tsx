@@ -4,6 +4,8 @@ import WelcomeScreen from './components/WelcomeScreen';
 import LandingGeneral from './components/LandingGeneral';
 import PreAuditForm from './components/PreAuditForm';
 import PreAuditResult from './components/PreAuditResult';
+import VisaSelect from './components/VisaSelect'; // Imported
+import AuditScore from './components/AuditScore'; // Imported
 import Dashboard from './components/Dashboard';
 import Sidebar from './components/Sidebar';
 import Chat from './components/Chat';
@@ -18,7 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from './contexts/AuthContext';
 import { MessageCircle } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
-import { sendMessageToAgent } from './services/geminiService';
+import { sendMessageToAgent, performPreAudit, resumeAuditSession, isChatSessionActive, startAuditSession } from './services/geminiService';
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "mock-key";
 const ai = new GoogleGenAI({ apiKey });
@@ -61,25 +63,67 @@ function App() {
   const { i18n } = useTranslation();
   const { user, loginAsTester } = useAuth();
 
+  // Session State
+  const [isSessionLoaded, setIsSessionLoaded] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
   useEffect(() => {
-    loginAsTester();
+    // Session Restoration Logic
+    const initApp = async () => {
+      let currentSessionId = Date.now().toString();
+      const savedData = localStorage.getItem('siam_visa_pro_session_v2');
+
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          if (parsed.messages && parsed.messages.length > 0) {
+            setMessages(parsed.messages);
+            setStep(parsed.step || AppStep.DASHBOARD);
+            setVisaType(parsed.visaType || 'DTV');
+            setAuditResult(parsed.auditResult || null);
+            currentSessionId = parsed.sessionId || currentSessionId;
+            setSessionId(currentSessionId);
+
+            await resumeAuditSession(parsed.messages, currentSessionId);
+          }
+        } catch (e) {
+          console.error("Session restore failed", e);
+        }
+      }
+
+      if (!isChatSessionActive()) {
+        await startAuditSession(currentSessionId);
+      }
+      setIsSessionLoaded(true);
+      loginAsTester();
+    };
+
+    initApp();
   }, []);
+
+  // Save Session
+  useEffect(() => {
+    if (!isSessionLoaded) return;
+    const data = {
+      sessionId,
+      messages,
+      step,
+      visaType,
+      auditResult,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('siam_visa_pro_session_v2', JSON.stringify(data));
+  }, [messages, step, visaType, auditResult, sessionId, isSessionLoaded]);
 
   const handleAuditSubmit = async (data: PreAuditData) => {
     setPreAuditData(data);
     setIsTyping(true);
     try {
-      // Simple audit simulation if needed or call real service
-      // For now kept simple as per original
-      setAuditResult({
-        audit_status: 'VALID',
-        confidence_score: 95,
-        summary: "Analysis complete.",
-        issues: [],
-        missing_docs: [],
-        ready_for_payment: true
-      });
+      const result = await performPreAudit(visaType, data);
+      setAuditResult(result);
       setStep(AppStep.PRE_RESULT);
+    } catch (error) {
+      console.error("Audit Error", error);
     } finally {
       setIsTyping(false);
     }
@@ -141,7 +185,7 @@ function App() {
       <main className="flex-1 relative overflow-hidden flex flex-col min-h-0 bg-[#F8FAFC]">
         {step === AppStep.WELCOME && (
           <WelcomeScreen
-            onStartConcierge={() => setIsChatOpen(true)}
+            onStartConcierge={() => setStep(AppStep.AUDIT)}
             onLoginRequest={() => setIsLoginModalOpen(true)}
             onNavigateToSecurity={() => setStep(AppStep.SECURITY)}
             onSelectTheme={() => { }}
@@ -151,10 +195,33 @@ function App() {
         {step === AppStep.QUALIFICATION && (
           <LandingGeneral
             onLoginRequest={() => setIsLoginModalOpen(true)}
-            onStartConcierge={() => setIsChatOpen(true)}
+            onStartConcierge={() => setStep(AppStep.AUDIT)}
             onNavigateToSecurity={() => setStep(AppStep.SECURITY)}
             onNavigateToDTV={() => setVisaType('DTV')}
           />
+        )}
+
+        {step === AppStep.AUDIT && (
+          <div className="flex-1 flex flex-col relative h-full">
+            {auditResult && (
+              <div className="p-4 bg-white/80 backdrop-blur border-b border-slate-200 shadow-sm z-10">
+                <AuditScore result={auditResult} />
+              </div>
+            )}
+            {/* Main View Chat */}
+            <Chat
+              messages={messages}
+              isTyping={isTyping}
+              onReply={handleSendMessage}
+              onClose={() => setStep(AppStep.DASHBOARD)}
+              onScheduleAppointment={() => setStep(AppStep.BOOKING)}
+              onCallAgent={() => {
+                setCallPayload({ visaType, reason: 'user_request' });
+                setIsCallModalOpen(true);
+              }}
+            />
+            <InputArea onSendMessage={handleSendMessage} disabled={isTyping} themeMode="EXECUTIVE" />
+          </div>
         )}
 
         {step === AppStep.PRE_AUDIT && (
@@ -220,7 +287,7 @@ function App() {
           <SecurityPage onBack={() => setStep(AppStep.WELCOME)} />
         )}
 
-        {isChatOpen && (
+        {isChatOpen && step !== AppStep.AUDIT && (
           <ChatWrapper onClose={() => setIsChatOpen(false)}>
             <Chat
               messages={messages}

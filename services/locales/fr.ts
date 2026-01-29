@@ -307,7 +307,13 @@ export const fr = {
             btn_home: "Retour Accueil",
             ref_file: "Réf. Dossier",
             summary_label: "Résumé",
-            whatsapp_button: "WhatsApp Expert Direct"
+            whatsapp_button: "WhatsApp Expert Direct",
+            contact_methods: {
+                whatsapp: "WhatsApp",
+                phone: "Tél",
+                email: "Email",
+                zoom: "Zoom"
+            }
         },
         chat: {
             save_required: "Sauvegarde Requise",

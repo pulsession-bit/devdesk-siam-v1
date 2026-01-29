@@ -38,12 +38,12 @@ export interface AuditResult {
   audit_status: 'VALID' | 'INVALID' | 'PENDING';
   issues: string[];
   missing_docs: string[];
-  received_docs?: string[]; 
+  received_docs?: string[];
   ready_for_payment: boolean;
-  request_payment?: boolean; 
+  request_payment?: boolean;
   require_login?: boolean; // NOUVEAU: Trigger pour l'inscription
-  confidence_score?: number; 
-  summary?: string; 
+  confidence_score?: number;
+  summary?: string;
   profile_update?: Partial<PreAuditData>;
 }
 
@@ -63,6 +63,7 @@ export enum AppStep {
   WELCOME = 'WELCOME',
   BOOKING = 'BOOKING', // NOUVELLE PAGE DÉDIÉE RDV
   QUALIFICATION = 'QUALIFICATION',
+  AUDIT = 'AUDIT', // FROM COPY
   PRE_AUDIT = 'PRE_AUDIT',
   PRE_RESULT = 'PRE_RESULT',
   DASHBOARD = 'DASHBOARD',
@@ -96,7 +97,7 @@ export interface UserProfile {
   photoURL: string | null;
   role: 'client' | 'agent' | 'admin';
   hasPaid?: boolean;
-  isAnonymous?: boolean; 
+  isAnonymous?: boolean;
   originCollection?: string; // TRACKING SOURCE
   metadata?: UserMetadata; // TRACKING TECH
 }
@@ -112,7 +113,7 @@ export interface LeadProfile {
   auditDetails?: AuditResult;
   lastAuditAt?: any;
   callScripts?: string[];
-  context?: PreAuditData; 
+  context?: PreAuditData;
   originCollection?: string; // TRACKING SOURCE
   metadata?: UserMetadata; // TRACKING TECH
 }

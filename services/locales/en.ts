@@ -303,7 +303,13 @@ export const commonEn = {
         btn_home: "Back to Home",
         ref_file: "File Ref.",
         summary_label: "Summary",
-        whatsapp_button: "WhatsApp Direct Expert"
+        whatsapp_button: "WhatsApp Direct Expert",
+        contact_methods: {
+            whatsapp: "WhatsApp",
+            phone: "Phone",
+            email: "Email",
+            zoom: "Zoom"
+        }
     },
     chat: {
         save_required: "Save Required",
