@@ -41,9 +41,9 @@ const DEFAULT_AUDIT_RESULT: AuditResult = {
 export function useSession(): UseSessionReturn {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [step, setStep] = useState<AppStep>(AppStep.DASHBOARD);
+  const [step, setStep] = useState<AppStep>(AppStep.WELCOME);
   const [visaType, setVisaType] = useState<VisaType>('DTV');
-  const [auditResult, setAuditResult] = useState<AuditResult | null>(DEFAULT_AUDIT_RESULT);
+  const [auditResult, setAuditResult] = useState<AuditResult | null>(null);
   const [isSessionLoaded, setIsSessionLoaded] = useState(false);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
