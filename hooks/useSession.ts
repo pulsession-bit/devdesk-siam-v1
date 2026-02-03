@@ -51,16 +51,35 @@ export function useSession(): UseSessionReturn {
   // Restore session on mount
   useEffect(() => {
     const initSession = async () => {
-      // FORCE CLEAN STATE - Remove all old sessions
-      localStorage.removeItem(SESSION_KEY);
-      localStorage.removeItem('siam_visa_user_session');
+      // Try to restore existing app session (NOT user auth session)
+      const saved = localStorage.getItem(SESSION_KEY);
+      if (saved) {
+        try {
+          const data: SessionData = JSON.parse(saved);
+          // Check if session is less than 24 hours old
+          if (data.timestamp && Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
+            if (data.sessionId) setSessionId(data.sessionId);
+            if (data.messages?.length) setMessages(data.messages);
+            if (data.step) setStep(data.step);
+            if (data.visaType) setVisaType(data.visaType);
+            if (data.auditResult) setAuditResult(data.auditResult);
+            setIsSessionLoaded(true);
+            return;
+          }
+        } catch (e) {
+          console.error('Failed to restore session:', e);
+          localStorage.removeItem(SESSION_KEY);
+        }
+      }
 
-      let currentSessionId = Date.now().toString();
+      // No valid session found, start fresh
+      const currentSessionId = Date.now().toString();
 
       if (!isChatSessionActive()) {
         await startAuditSession(currentSessionId);
       }
 
+      setSessionId(currentSessionId);
       setIsSessionLoaded(true);
     };
 

@@ -149,8 +149,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onNavigateToSecurity }
 
     const handleAuthError = (err: any) => {
         if (err.code === 'auth/unauthorized-domain' || err.code === 'auth/operation-not-allowed') {
-            setError({ message: "Configuration serveur requise. Passage en mode invité..." });
-            setTimeout(() => loginAsGuest(), 1500);
+            setError({
+                code: err.code,
+                message: "Domaine non autorisé. Veuillez configurer Firebase ou utiliser le mode invité.",
+                domain: window.location.hostname
+            });
+            // Ne pas auto-login en mode invité - laisser l'utilisateur choisir
             return;
         }
         if (err.code === 'auth/popup-closed-by-user') {
@@ -405,8 +409,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onNavigateToSecurity }
                             )}
                         </div>
 
-                        {/* Footer Link: PDPA Only */}
-                        <div className="mt-6 pt-6 border-t border-slate-100 w-full shrink-0 flex flex-col items-center gap-2">
+                        {/* Footer: Guest Mode + Privacy */}
+                        <div className="mt-6 pt-6 border-t border-slate-100 w-full shrink-0 flex flex-col items-center gap-3">
+                            <button
+                                onClick={() => { loginAsGuest(); onClose && onClose(); }}
+                                className="text-xs text-slate-500 hover:text-[#051229] font-bold underline decoration-slate-300 underline-offset-4"
+                            >
+                                Continuer en mode démo (invité)
+                            </button>
                             <p className="text-[9px] text-slate-400 font-medium leading-relaxed">
                                 <button onClick={onNavigateToSecurity} className="hover:text-[#051229] underline decoration-slate-300 underline-offset-2">
                                     {t('auth.privacy_link')}
