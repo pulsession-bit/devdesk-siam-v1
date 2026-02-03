@@ -59,7 +59,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const isValid = Date.now() - parsed.timestamp < 7 * 24 * 60 * 60 * 1000;
 
           // Ensure we don't restore guest/mock users automatically
-          const isMockOrGuest = parsed.user.isAnonymous || parsed.user.email?.includes('demo.local');
+          const isMockOrGuest = parsed.user.isAnonymous ||
+            parsed.user.email?.includes('demo.local') ||
+            parsed.user.email?.includes('mock') ||
+            parsed.user.displayName === 'Mock User';
 
           if (isValid && parsed.user.uid && !isMockOrGuest) {
             setUser(parsed.user);
