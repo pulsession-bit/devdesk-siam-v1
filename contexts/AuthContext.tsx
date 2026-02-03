@@ -34,10 +34,10 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   sessionId: null,
   isAuthenticated: false,
-  loginAsGuest: () => {},
-  loginAsTester: () => {},
-  loginWithGoogle: async () => {},
-  logout: async () => {}
+  loginAsGuest: () => { },
+  loginAsTester: () => { },
+  loginWithGoogle: async () => { },
+  logout: async () => { }
 });
 
 const USER_SESSION_KEY = 'siam_visa_user_session';
@@ -57,7 +57,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (parsed.user && parsed.timestamp) {
           // Check if session is less than 7 days old
           const isValid = Date.now() - parsed.timestamp < 7 * 24 * 60 * 60 * 1000;
-          if (isValid && parsed.user.uid) {
+
+          // Ensure we don't restore guest/mock users automatically
+          const isMockOrGuest = parsed.user.isAnonymous || parsed.user.email?.includes('demo.local');
+
+          if (isValid && parsed.user.uid && !isMockOrGuest) {
             setUser(parsed.user);
             setUserRole(parsed.userRole || 'client');
             setSessionId(parsed.sessionId);
