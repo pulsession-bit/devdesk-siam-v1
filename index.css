@@ -2,11 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   BASE STYLES
+   ============================================ */
 @layer base {
   :root {
-    --brand-navy: #051229;
-    --brand-gold: #FF9F1C;
-    --brand-amber: #FF9F1C;
+    /* Brand Colors */
+    --brand-navy: theme('colors.brand.navy');
+    --brand-navy-light: theme('colors.brand.navy-light');
+    --brand-gold: theme('colors.brand.gold');
+    --brand-slate: theme('colors.brand.slate');
+
+    /* Semantic Colors */
+    --color-primary: var(--brand-gold);
+    --color-background: var(--brand-navy);
+    --color-surface: var(--brand-slate);
+    --color-text: #f8fafc;
+    --color-text-muted: #94a3b8;
+
+    /* Spacing */
+    --header-height: 4rem;
+    --sidebar-width: 16rem;
+    --sidebar-collapsed: 4.5rem;
   }
 
   html {
@@ -19,10 +36,11 @@
     margin: 0;
     padding: 0;
     background-color: var(--brand-navy);
-    color: #f8fafc;
-    font-family: 'Plus Jakarta Sans', 'Noto Sans Arabic', sans-serif;
+    color: var(--color-text);
+    font-family: theme('fontFamily.sans');
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   #root {
@@ -30,109 +48,207 @@
     display: flex;
     flex-direction: column;
   }
+
+  /* Focus States */
+  *:focus-visible {
+    outline: 2px solid var(--brand-gold);
+    outline-offset: 2px;
+  }
+
+  /* Selection */
+  ::selection {
+    background-color: rgba(255, 159, 28, 0.3);
+    color: white;
+  }
 }
 
+/* ============================================
+   COMPONENT CLASSES
+   ============================================ */
 @layer components {
+  /* Scroll Container */
   .scroll-container {
-    overflow-y: auto;
-    overflow-x: hidden;
+    @apply overflow-y-auto overflow-x-hidden h-full;
     -webkit-overflow-scrolling: touch;
-    height: 100%;
     scrollbar-width: thin;
     scrollbar-color: var(--brand-gold) transparent;
   }
 
+  /* Backgrounds */
   .bg-executive {
-    background: radial-gradient(circle at center, #0F264A 0%, #051229 100%);
+    background: radial-gradient(circle at center, theme('colors.brand.royal') 0%, theme('colors.brand.navy') 100%);
   }
 
+  .bg-glass {
+    @apply bg-white/10 backdrop-blur-md border border-white/10;
+  }
+
+  .bg-glass-dark {
+    @apply bg-black/20 backdrop-blur-md border border-white/5;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-widest transition-all duration-300;
+  }
+
+  .btn-primary {
+    @apply btn bg-brand-gold text-brand-navy hover:bg-amber-400 shadow-gold active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply btn bg-brand-navy text-white hover:bg-brand-royal border border-white/10;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-white hover:bg-white/10;
+  }
+
+  .btn-outline {
+    @apply btn bg-transparent border-2 border-brand-gold text-brand-gold hover:bg-brand-gold hover:text-brand-navy;
+  }
+
+  /* Cards */
+  .card {
+    @apply bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden;
+  }
+
+  .card-dark {
+    @apply bg-brand-navy rounded-2xl shadow-navy border border-white/10 overflow-hidden;
+  }
+
+  .card-glass {
+    @apply bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 overflow-hidden;
+  }
+
+  /* Inputs */
+  .input {
+    @apply w-full bg-brand-slate border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-brand-navy outline-none transition-colors;
+    @apply focus:border-brand-navy focus:ring-2 focus:ring-brand-navy/10;
+  }
+
+  .input-dark {
+    @apply w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-white outline-none transition-colors;
+    @apply focus:border-brand-gold focus:ring-2 focus:ring-brand-gold/20 placeholder:text-white/50;
+  }
+
+  /* Labels */
+  .label {
+    @apply text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block;
+  }
+
+  /* Tags / Badges */
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest;
+  }
+
+  .badge-gold {
+    @apply badge bg-brand-gold/10 text-brand-gold border border-brand-gold/30;
+  }
+
+  .badge-success {
+    @apply badge bg-emerald-100 text-emerald-700;
+  }
+
+  .badge-warning {
+    @apply badge bg-amber-100 text-amber-700;
+  }
+
+  .badge-error {
+    @apply badge bg-red-100 text-red-700;
+  }
+
+  /* Section Headers */
+  .section-title {
+    @apply text-2xl md:text-3xl font-black text-brand-navy tracking-tight;
+  }
+
+  .section-subtitle {
+    @apply text-sm text-slate-500 font-medium;
+  }
+
+  /* Animation Classes */
   .animate-in {
     animation-duration: 500ms;
     animation-fill-mode: both;
     animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .fade-in {
-    animation-name: fadeIn;
+  .fade-in { animation-name: fadeIn; }
+  .zoom-in-95 { animation-name: zoomIn; }
+  .slide-in-from-top-4 { animation-name: slideDown; }
+  .slide-in-from-bottom-4 { animation-name: slideUp; }
+  .slide-in-from-right { animation-name: slideLeft; }
+  .slide-in-from-left { animation-name: slideRight; }
+
+  /* Duration modifiers */
+  .duration-300 { animation-duration: 300ms; }
+  .duration-500 { animation-duration: 500ms; }
+  .duration-700 { animation-duration: 700ms; }
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+@layer utilities {
+  /* Text Utilities */
+  .text-balance {
+    text-wrap: balance;
   }
 
-  .zoom-in-95 {
-    animation-name: zoomIn95;
+  .text-gradient-gold {
+    @apply bg-gradient-to-r from-brand-gold to-amber-400 bg-clip-text text-transparent;
   }
 
-  .slide-in-from-top-4 {
-    animation-name: slideInFromTop4;
+  /* Spacing Utilities */
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 
-  .slide-in-from-bottom-4 {
-    animation-name: slideInFromBottom4;
+  /* Hide Scrollbar */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 
-  .slide-in-from-right-8 {
-    animation-name: slideInFromRight8;
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Custom Scrollbar */
+  .scrollbar-gold::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-gold::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-gold::-webkit-scrollbar-thumb {
+    background: var(--brand-gold);
+    border-radius: 10px;
+  }
+
+  .scrollbar-gold::-webkit-scrollbar-thumb:hover {
+    background: #ffb84d;
+  }
+
+  /* No tap highlight on mobile */
+  .tap-highlight-none {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes zoomIn95 {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes slideInFromTop4 {
-  from {
-    opacity: 0;
-    transform: translateY(-1rem);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInFromBottom4 {
-  from {
-    opacity: 0;
-    transform: translateY(1rem);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInFromRight8 {
-  from {
-    opacity: 0;
-    transform: translateX(2rem);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
+/* ============================================
+   GLOBAL SCROLLBAR
+   ============================================ */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -144,11 +260,20 @@
   border-radius: 10px;
 }
 
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+::-webkit-scrollbar-thumb:hover {
+  background: #ffb84d;
 }
 
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+
+  .no-print {
+    display: none !important;
+  }
 }
