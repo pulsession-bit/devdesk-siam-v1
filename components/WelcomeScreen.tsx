@@ -65,6 +65,10 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSelectTheme, onLoginReq
             <button
               onClick={async () => {
                 try {
+                  // DEBUG: Check if we are in mock mode
+                  if (!import.meta.env.VITE_FIREBASE_API_KEY) {
+                    alert("⚠️ ATTENTION : Firebase API Key manquante. Mode Mock activé.");
+                  }
                   await loginWithGoogle();
                   onStartConcierge();
                 } catch (error) {
