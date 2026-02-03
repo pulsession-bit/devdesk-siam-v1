@@ -18,147 +18,112 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSelectTheme, onLoginReq
   const { user } = useAuth();
   const { t } = useTranslation();
 
+  const { loginWithGoogle, loginAsGuest } = useAuth();
+
   return (
-    <div className="absolute inset-0 z-[100] bg-brand-navy overflow-y-auto scroll-container">
-      {/* Background Image Fixed */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-         <img 
-            src="https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?q=80&w=2600&auto=format&fit=crop" 
-            className="w-full h-full object-cover"
-            alt={t('alt.thailand_boats')}
-         />
-         {/* Gradient Overlay pour lisibilité texte - Exactement comme l'image */}
-         <div className="absolute inset-0 bg-gradient-to-b from-brand-navy/80 via-brand-navy/40 to-brand-navy/90" />
+    <div className="absolute inset-0 z-[100] bg-gradient-to-br from-brand-navy via-[#0a1e3d] to-brand-navy overflow-y-auto scroll-container">
+      {/* Background Pattern */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-10">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,159,28,0.3) 1px, transparent 0)`,
+          backgroundSize: '40px 40px'
+        }} />
       </div>
 
       {/* Content Wrapper */}
-      <div className="relative z-10 flex flex-col min-h-full">
-        
-        {/* Navigation Header */}
-        <div className="w-full p-6 flex flex-wrap justify-between items-center gap-4">
-           <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-brand-gold rounded-lg flex items-center justify-center text-brand-navy shadow-lg">
-                  <ShieldCheck size={18} strokeWidth={3} />
-              </div>
-              <span className="text-white font-bold text-lg tracking-tight">SiamVisa<span className="text-brand-gold">Pro</span></span>
-           </div>
-           
-           <div className="flex items-center gap-4">
-               <LanguageSelector variant="dropdown" />
-               {!user && (
-                   <button 
-                     onClick={onLoginRequest}
-                     className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-5 py-2 rounded-full text-xs font-bold transition-all border border-white/10"
-                   >
-                     {t('auth.title')}
-                   </button>
-               )}
-           </div>
-        </div>
+      <div className="relative z-10 flex items-center justify-center min-h-full p-6">
 
-        {/* Main Content Hero */}
-        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center pt-10 pb-20">
-          
-          {/* Badge "Nouvelle Opportunité" */}
-          <div className="mb-6 animate-in slide-in-from-top-4 duration-700">
-             <span className="px-4 py-1.5 rounded-full border border-brand-gold/50 bg-brand-gold/10 text-brand-gold text-[10px] font-black uppercase tracking-[0.2em] backdrop-blur-sm">
-               {t('welcome.new_opportunity')}
-             </span>
+        {/* Login Card */}
+        <div className="w-full max-w-md">
+
+          {/* Logo */}
+          <div className="text-center mb-8 animate-in fade-in duration-700">
+            <div className="inline-flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-brand-gold rounded-2xl flex items-center justify-center text-brand-navy shadow-2xl shadow-brand-gold/20">
+                <ShieldCheck size={28} strokeWidth={2.5} />
+              </div>
+              <span className="text-white font-black text-3xl tracking-tight">
+                SiamVisa<span className="text-brand-gold">Pro</span>
+              </span>
+            </div>
+            <p className="text-slate-400 text-sm font-medium">
+              {t('welcome.subtext')}
+            </p>
           </div>
 
-          {/* Headline Massive */}
-          <h1 className="text-5xl md:text-7xl font-black text-white leading-[1.1] mb-6 tracking-tight drop-shadow-lg animate-in zoom-in-95 duration-700">
-            {t('welcome.headline')} <br/>
-            <span className="text-brand-gold">{t('welcome.headline_highlight')}</span>
-          </h1>
+          {/* Login Card */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl animate-in zoom-in-95 duration-700 delay-100">
 
-          {/* Subtext */}
-          <p className="text-slate-200 text-sm md:text-lg font-medium leading-relaxed max-w-2xl mb-10 drop-shadow-md animate-in slide-in-from-bottom-4 duration-700 delay-100">
-            {t('welcome.subtext')}
-          </p>
+            <h2 className="text-2xl font-black text-white text-center mb-2">
+              {t('auth.title')}
+            </h2>
+            <p className="text-slate-400 text-sm text-center mb-8">
+              Connectez-vous pour accéder à votre espace
+            </p>
 
-          {/* CTA Button - Orange Vibrant */}
-          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 animate-in slide-in-from-bottom-4 duration-700 delay-200 w-full md:w-auto px-4 md:px-0">
-              <button 
-                onClick={onLoginRequest}
-                className="w-full md:w-auto bg-brand-gold hover:bg-amber-400 text-brand-navy px-10 py-5 rounded-full font-black text-sm uppercase tracking-widest shadow-2xl shadow-brand-gold/20 transform hover:-translate-y-1 transition-all active:scale-95"
-              >
-                {t('welcome.cta_start')}
-              </button>
+            {/* Google Login Button */}
+            <button
+              onClick={async () => {
+                try {
+                  await loginWithGoogle();
+                  onStartConcierge();
+                } catch (error) {
+                  console.error('Login failed:', error);
+                }
+              }}
+              className="w-full bg-white hover:bg-slate-50 text-brand-navy px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-3 shadow-lg transition-all hover:scale-105 active:scale-95 mb-4"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+              </svg>
+              Continuer avec Google
+            </button>
 
-              <button
-                onClick={onStartConcierge}
-                className="w-full md:w-auto bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 px-8 py-5 rounded-full font-bold text-sm uppercase tracking-widest shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 group"
-              >
-                 <MessageSquare size={18} className="text-brand-gold group-hover:scale-110 transition-transform" />
-                 <span>{t('welcome.cta_chat')}</span>
-              </button>
+            {/* Divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/10"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-transparent px-2 text-slate-500 font-bold">ou</span>
+              </div>
+            </div>
+
+            {/* Guest Mode Button */}
+            <button
+              onClick={() => {
+                loginAsGuest();
+                onStartConcierge();
+              }}
+              className="w-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95"
+            >
+              <LogIn size={18} />
+              Continuer en mode invité
+            </button>
+
+            {/* Info Text */}
+            <p className="text-slate-500 text-xs text-center mt-6 leading-relaxed">
+              En vous connectant, vous acceptez nos conditions d'utilisation et notre politique de confidentialité.
+            </p>
           </div>
-          
-          <div className="mt-8 flex items-center gap-2 text-slate-300 text-xs font-bold animate-in fade-in delay-500">
-              <ShieldCheck size={16} className="text-green-400" />
-              <span>{t('welcome.secure_badge')}</span>
+
+          {/* Security Badge */}
+          <div className="mt-6 flex items-center justify-center gap-2 text-slate-400 text-xs animate-in fade-in delay-300">
+            <ShieldCheck size={14} className="text-green-400" />
+            <span className="font-medium">{t('welcome.secure_badge')}</span>
           </div>
 
-        </div>
+          {/* Language Selector */}
+          <div className="mt-6 flex justify-center">
+            <LanguageSelector variant="dropdown" />
+          </div>
 
-        {/* Features Footer (Like image) */}
-        <div className="bg-white py-10 px-6 md:rounded-t-[3rem] w-full">
-           <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-              
-              <div className="flex flex-col items-center text-center space-y-3">
-                 <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-brand-navy mb-1">
-                    <Globe size={24} strokeWidth={1.5} />
-                 </div>
-                 <h3 className="font-black text-brand-navy text-sm uppercase tracking-wide">{t('welcome.feature_freedom')}</h3>
-                 <p className="text-xs text-slate-500 max-w-[200px]">{t('welcome.feature_freedom_desc')}</p>
-              </div>
-
-              <div className="flex flex-col items-center text-center space-y-3">
-                 <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-brand-navy mb-1">
-                    <Award size={24} strokeWidth={1.5} />
-                 </div>
-                 <h3 className="font-black text-brand-navy text-sm uppercase tracking-wide">{t('welcome.feature_expert')}</h3>
-                 <p className="text-xs text-slate-500 max-w-[200px]">{t('welcome.feature_expert_desc')}</p>
-              </div>
-
-              <div className="flex flex-col items-center text-center space-y-3">
-                 <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-brand-navy mb-1">
-                    <Zap size={24} strokeWidth={1.5} />
-                 </div>
-                 <h3 className="font-black text-brand-navy text-sm uppercase tracking-wide">{t('welcome.feature_speed')}</h3>
-                 <p className="text-xs text-slate-500 max-w-[200px]">{t('welcome.feature_speed_desc')}</p>
-              </div>
-
-           </div>
-           
-           <div className="mt-8 flex flex-col items-center gap-4">
-               <button 
-                 onClick={onNavigateToSecurity} 
-                 className="text-[10px] text-slate-400 font-bold uppercase tracking-widest hover:text-[#051229] transition-colors flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-50"
-               >
-                   <ShieldCheck size={12} /> {t('sidebar.security')}
-               </button>
-               
-               <div className="md:hidden">
-                   <InstallAppButton location="sidebar" />
-               </div>
-           </div>
         </div>
 
       </div>
-
-      {/* Floating Concierge Button (Desktop/Mobile) */}
-      <button 
-        onClick={onStartConcierge}
-        className="fixed bottom-8 right-8 z-50 group flex items-center gap-3 pl-6 pr-4 py-4 rounded-full bg-[#051229] text-white shadow-2xl transition-all hover:scale-105 active:scale-95 border border-white/10"
-      >
-         <span className="text-xs font-bold uppercase tracking-widest hidden md:block">{t('welcome.need_help')}</span>
-         <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-brand-gold group-hover:text-brand-navy transition-colors">
-            <MessageSquare size={20} className="text-brand-gold group-hover:text-brand-navy" />
-         </div>
-      </button>
-
     </div>
   );
 };
