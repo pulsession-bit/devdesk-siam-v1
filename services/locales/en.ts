@@ -303,6 +303,7 @@ export const commonEn = {
         btn_home: "Back to Home",
         ref_file: "File Ref.",
         summary_label: "Summary",
+        search_placeholder: "Ask the AI a question (e.g. DTV Visa requirements...)",
         whatsapp_button: "WhatsApp Direct Expert",
         contact_methods: {
             whatsapp: "WhatsApp",

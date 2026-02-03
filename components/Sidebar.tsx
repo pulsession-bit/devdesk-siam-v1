@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, MessageSquare, FileText, Settings, LogOut, ShieldCheck, User, Menu, X, ChevronLeft, ChevronRight, FolderClock, ShoppingBag, Share2 } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, FileText, Settings, LogOut, ShieldCheck, User, Menu, X, ChevronLeft, ChevronRight, FolderClock, ShoppingBag, Share2, Database } from 'lucide-react';
 import { AppStep, ThemeMode } from '../types';
 import InstallAppButton from './InstallAppButton';
 import { useAuth } from '../contexts/AuthContext';
@@ -39,6 +39,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentStep, onNavigate, themeMode, u
     { step: AppStep.SECURITY, label: t('sidebar.security'), icon: <ShieldCheck size={20} /> },
     // DEV SHORTCUT
     { step: AppStep.QUALIFICATION, label: 'DEV: Formulaire', icon: <FileText size={20} className="text-red-400" /> },
+    { step: AppStep.DB_AUDIT, label: 'Audit / DB', icon: <Database size={20} className="text-emerald-400" /> },
     { step: 'EXTERNAL_COPY' as AppStep, label: 'Audit AI Copy', icon: <Share2 size={20} className="text-blue-400" />, href: 'http://localhost:5174' },
   ];
 

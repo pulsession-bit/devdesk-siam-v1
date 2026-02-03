@@ -13,15 +13,24 @@ interface LandingGeneralProps {
     onStartConcierge: () => void;
     onNavigateToSecurity: () => void;
     onNavigateToDTV?: () => void;
+    onSearch?: (query: string) => void;
 }
 
-const LandingGeneral: React.FC<LandingGeneralProps> = ({ onLoginRequest, onStartConcierge, onNavigateToSecurity, onNavigateToDTV }) => {
+const LandingGeneral: React.FC<LandingGeneralProps> = ({ onLoginRequest, onStartConcierge, onNavigateToSecurity, onNavigateToDTV, onSearch }) => {
     const { t, i18n } = useTranslation();
     const [contactMethod, setContactMethod] = useState<'whatsapp' | 'phone' | 'email' | 'zoom'>('whatsapp');
     const [formData, setFormData] = useState({ name: '', email: '', date: '', time: '', contactDetail: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [appointmentRef, setAppointmentRef] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const handleSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchQuery.trim() && onSearch) {
+            onSearch(searchQuery);
+        }
+    };
 
     const formRef = useRef<HTMLDivElement>(null);
 
@@ -118,6 +127,33 @@ const LandingGeneral: React.FC<LandingGeneralProps> = ({ onLoginRequest, onStart
                 <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 pb-20 pt-10">
                     <div className="mb-8 animate-in slide-in-from-top-4 duration-700"><span className="px-5 py-2 rounded-full border border-[#FF9F1C]/50 bg-[#FF9F1C]/10 text-[#FF9F1C] text-[10px] font-black uppercase tracking-[0.25em] backdrop-blur-sm">{t('welcome.new_opportunity')}</span></div>
                     <h1 className="text-5xl md:text-7xl font-black text-white leading-[1.1] mb-6 tracking-tight drop-shadow-2xl max-w-4xl">{t('welcome.headline')} <br /><span className="text-[#FF9F1C]">{t('welcome.headline_highlight')}</span></h1>
+
+                    {/* AI Search Block */}
+                    <div className="w-full max-w-2xl mb-10 relative z-20">
+                        <form onSubmit={handleSearchSubmit} className="relative group">
+                            <div className="absolute inset-0 bg-gradient-to-r from-[#FF9F1C] to-[#FF9F1C]/50 rounded-2xl blur-lg opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
+                            <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-2 flex items-center shadow-2xl transition-all duration-300 focus-within:bg-white/20 focus-within:border-[#FF9F1C]/50">
+                                <div className="pl-4 pr-3 text-[#FF9F1C]">
+                                    <Zap size={24} className="animate-pulse" />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder={t('landing.search_placeholder') || "Posez une question à l'IA (ex: Visa DTV conditions...)"}
+                                    className="flex-1 bg-transparent border-none outline-none text-white placeholder-slate-300 font-medium text-lg py-3"
+                                />
+                                <button
+                                    type="submit"
+                                    className="bg-[#FF9F1C] hover:bg-amber-400 text-[#051229] p-3 rounded-xl transition-all shadow-lg hover:shadow-[#FF9F1C]/50 active:scale-95 flex items-center gap-2 font-bold text-sm uppercase tracking-wide"
+                                >
+                                    <span>Audit IA</span>
+                                    <ArrowRight size={18} />
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
                     <p className="text-slate-200 text-lg font-medium leading-relaxed max-w-2xl mb-10 drop-shadow-md">{t('welcome.subtext')}</p>
                     <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto"><button onClick={scrollToForm} className="w-full md:w-auto bg-[#FF9F1C] hover:bg-amber-400 text-[#051229] px-10 py-5 rounded-full font-black text-sm uppercase tracking-widest shadow-2xl shadow-[#FF9F1C]/20 transition-all transform hover:-translate-y-1 active:scale-95">{t('welcome.cta_start')}</button><div className="flex items-center gap-2 text-slate-300 text-xs font-bold bg-white/5 px-4 py-2 rounded-full backdrop-blur-sm border border-white/10"><ShieldCheck size={14} className="text-emerald-400" /><span>{t('welcome.secure_badge')}</span></div></div>
                 </div>

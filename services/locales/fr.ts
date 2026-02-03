@@ -307,6 +307,7 @@ export const fr = {
             btn_home: "Retour Accueil",
             ref_file: "Réf. Dossier",
             summary_label: "Résumé",
+            search_placeholder: "Posez une question à l'IA (ex: Visa DTV conditions...)",
             whatsapp_button: "WhatsApp Expert Direct",
             contact_methods: {
                 whatsapp: "WhatsApp",

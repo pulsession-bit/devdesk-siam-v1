@@ -16,6 +16,7 @@ import { ApplicationsPage } from './components/ApplicationsPage';
 import ShopPage from './components/ShopPage';
 import DocumentsPage from './components/DocumentsPage';
 import CallModal from './components/CallModal';
+import DatabaseAudit from './components/DatabaseAudit';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './contexts/AuthContext';
 import { MessageCircle } from 'lucide-react';
@@ -130,6 +131,10 @@ function App() {
   };
 
   const handleSendMessage = async (text: string) => {
+    if (text.toLowerCase() === 'audit db') {
+      setStep(AppStep.DB_AUDIT);
+      return;
+    }
     const userMsg: ChatMessage = { id: Date.now().toString(), text, sender: 'user', timestamp: Date.now() };
     setMessages(prev => [...prev, userMsg]);
     setIsTyping(true);
@@ -198,6 +203,10 @@ function App() {
             onStartConcierge={() => setStep(AppStep.AUDIT)}
             onNavigateToSecurity={() => setStep(AppStep.SECURITY)}
             onNavigateToDTV={() => setVisaType('DTV')}
+            onSearch={(query) => {
+              setStep(AppStep.AUDIT);
+              handleSendMessage(query);
+            }}
           />
         )}
 
@@ -306,6 +315,10 @@ function App() {
               themeMode="EXECUTIVE"
             />
           </ChatWrapper>
+        )}
+
+        {step === AppStep.DB_AUDIT && (
+          <DatabaseAudit onBack={() => setStep(AppStep.DASHBOARD)} />
         )}
 
         {isCallModalOpen && callPayload && (

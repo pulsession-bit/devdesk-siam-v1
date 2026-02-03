@@ -74,7 +74,8 @@ export enum AppStep {
   APPLICATIONS = 'APPLICATIONS',
   SHOP = 'SHOP',
   SECURITY = 'SECURITY',
-  WIDGET = 'WIDGET' // NOUVEAU
+  WIDGET = 'WIDGET', // NOUVEAU
+  DB_AUDIT = 'DB_AUDIT' // NOUVEAU
 }
 
 // NOUVEAU: Interface pour la télémétrie technique
