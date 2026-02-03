@@ -51,26 +51,11 @@ export function useSession(): UseSessionReturn {
   // Restore session on mount
   useEffect(() => {
     const initSession = async () => {
+      // FORCE CLEAN STATE - Remove all old sessions
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem('siam_visa_user_session');
+
       let currentSessionId = Date.now().toString();
-      const savedData = localStorage.getItem(SESSION_KEY);
-
-      if (savedData) {
-        try {
-          const parsed: SessionData = JSON.parse(savedData);
-          if (parsed.messages && parsed.messages.length > 0) {
-            setMessages(parsed.messages);
-            setStep(parsed.step || AppStep.DASHBOARD);
-            setVisaType(parsed.visaType || 'DTV');
-            setAuditResult(parsed.auditResult || null);
-            currentSessionId = parsed.sessionId || currentSessionId;
-            setSessionId(currentSessionId);
-
-            await resumeAuditSession(parsed.messages, currentSessionId);
-          }
-        } catch (e) {
-          console.error('Session restore failed:', e);
-        }
-      }
 
       if (!isChatSessionActive()) {
         await startAuditSession(currentSessionId);

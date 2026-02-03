@@ -325,7 +325,7 @@ function App() {
           )}
 
           {/* Floating Chat Button */}
-          {!isChatOpen && (
+          {!isChatOpen && step !== AppStep.WELCOME && (
             <button
               onClick={() => setIsChatOpen(true)}
               className="fixed bottom-8 right-8 z-[100] w-16 h-16 rounded-full bg-[#051229] text-[#FF9F1C] shadow-2xl flex items-center justify-center border border-white/10 hover:scale-110 active:scale-95 transition-all"
