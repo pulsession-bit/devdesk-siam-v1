@@ -82,27 +82,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSelectTheme, onLoginReq
               Continuer avec Google
             </button>
 
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10"></div>
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-transparent px-2 text-slate-500 font-bold">ou</span>
-              </div>
-            </div>
 
-            {/* Guest Mode Button */}
-            <button
-              onClick={() => {
-                loginAsGuest();
-                onStartConcierge();
-              }}
-              className="w-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95"
-            >
-              <LogIn size={18} />
-              Continuer en mode invité
-            </button>
 
             {/* Info Text */}
             <p className="text-slate-500 text-xs text-center mt-6 leading-relaxed">
