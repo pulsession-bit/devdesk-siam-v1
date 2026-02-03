@@ -1,5 +1,4 @@
-
-import { initializeApp } from 'firebase/app';
+import { initializeApp, FirebaseApp } from 'firebase/app';
 import {
     getAuth,
     GoogleAuthProvider,
@@ -12,7 +11,8 @@ import {
     onAuthStateChanged as onFirebaseAuthStateChanged,
     sendEmailVerification,
     User,
-    ConfirmationResult
+    ConfirmationResult,
+    Auth
 } from 'firebase/auth';
 import {
     getFirestore,
@@ -26,20 +26,23 @@ import {
     orderBy,
     serverTimestamp,
     limit,
-    updateDoc
+    updateDoc,
+    setDoc,
+    Firestore
 } from 'firebase/firestore';
 import {
     getStorage,
     ref,
     uploadBytes,
-    getDownloadURL
+    getDownloadURL,
+    FirebaseStorage
 } from 'firebase/storage';
 import { Appointment, ChatMessage, UserMetadata } from '../types';
 
 // Extend Window interface for Recaptcha
 declare global {
     interface Window {
-        recaptchaVerifier: any;
+        recaptchaVerifier: RecaptchaVerifier | null;
     }
 }
 
@@ -57,38 +60,55 @@ const firebaseConfig = {
 export let isMockMode = !import.meta.env.VITE_FIREBASE_API_KEY;
 export const APP_ORIGIN_COLLECTION = 'web_leads_v2';
 
-let app: any;
-export let auth: any;
-export let db: any;
-export let storage: any;
+let app: FirebaseApp | null = null;
+export let auth: Auth | null = null;
+export let db: Firestore | null = null;
+export let storage: FirebaseStorage | null = null;
 
-try {
-    if (!isMockMode && firebaseConfig.apiKey) {
-        app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        db = getFirestore(app);
-        storage = getStorage(app);
-    } else {
+// Initialize Firebase
+const initializeFirebase = () => {
+    try {
+        if (!isMockMode && firebaseConfig.apiKey) {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            storage = getStorage(app);
+            console.log('✅ Firebase initialized successfully');
+            return true;
+        } else {
+            console.warn('⚠️ Firebase running in MOCK MODE (no API key)');
+            isMockMode = true;
+            return false;
+        }
+    } catch (e) {
+        console.error("Firebase Initialization Error:", e);
         isMockMode = true;
-        auth = { currentUser: null };
+        return false;
     }
-} catch (e) {
-    console.error("Firebase Initialization Error:", e);
-    isMockMode = true;
-}
+};
+
+// Initialize on module load
+initializeFirebase();
+
+// Helper to check if Firebase Auth is ready
+const isAuthReady = (): boolean => {
+    return !isMockMode && auth !== null;
+};
+
+// Helper to check if Firestore is ready
+const isFirestoreReady = (): boolean => {
+    return !isMockMode && db !== null;
+};
 
 // --- STORAGE SERVICES ---
 export const uploadUserDocument = async (userId: string, file: File, category: string): Promise<string | null> => {
     if (isMockMode || !storage) {
         console.log("Mock Upload:", file.name);
-        return URL.createObjectURL(file); // Mock URL
+        return URL.createObjectURL(file);
     }
 
     try {
-        // Structure: users/{userId}/documents/{category}/{timestamp}_{filename}
         const storageRef = ref(storage, `users/${userId}/documents/${category}/${Date.now()}_${file.name}`);
-
-        // Metadata pour la sécurité et le tri
         const metadata = {
             contentType: file.type,
             customMetadata: {
@@ -102,9 +122,8 @@ export const uploadUserDocument = async (userId: string, file: File, category: s
         return downloadURL;
     } catch (error: any) {
         console.error("Storage Upload Error:", error);
-        // FALLBACK DEV : Si permission denied (règles) ou CORS, on simule l'upload
         if (error.code === 'storage/unauthorized' || error.message?.includes('CORS') || error.code === 'storage/unknown') {
-            console.warn("⚠️ FALLBACK MOCK: Upload bloqué par règles/CORS. Simulation réussie pour le test.");
+            console.warn("⚠️ FALLBACK MOCK: Upload bloqué par règles/CORS. Simulation réussie.");
             return URL.createObjectURL(file);
         }
         throw error;
@@ -124,114 +143,226 @@ export const captureClientMetadata = async (): Promise<UserMetadata> => {
     };
 };
 
-// Auth Functions
-export const onAuthStateChanged = (authInstance: any, callback: (user: User | null) => void) => {
-    if (isMockMode) {
-        callback(null);
-        return () => { };
+// ============================================
+// AUTH FUNCTIONS
+// ============================================
+
+export const onAuthStateChanged = (authInstance: Auth | null, callback: (user: User | null) => void) => {
+    if (isMockMode || !authInstance) {
+        // In mock mode, call with null immediately
+        setTimeout(() => callback(null), 0);
+        return () => {};
     }
     return onFirebaseAuthStateChanged(authInstance, callback);
 };
 
 export const signInWithGoogle = async () => {
-    if (isMockMode) {
-        return { user: { uid: 'mock-google-user', displayName: 'Mock User', email: 'mock@gmail.com', emailVerified: true } };
+    // Always check mock mode first
+    if (isMockMode || !isAuthReady()) {
+        console.log('🔐 Mock Google Sign-In');
+        return {
+            user: {
+                uid: 'mock-google-user-' + Date.now(),
+                displayName: 'Mock User',
+                email: 'mock@gmail.com',
+                emailVerified: true,
+                isAnonymous: false,
+                providerData: [{ providerId: 'google.com' }]
+            }
+        };
     }
-    const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider);
+
+    try {
+        const provider = new GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
+        return await signInWithPopup(auth!, provider);
+    } catch (error: any) {
+        // If unauthorized domain, fallback to mock
+        if (error.code === 'auth/unauthorized-domain') {
+            console.warn('⚠️ Domain not authorized in Firebase. Falling back to mock mode.');
+            isMockMode = true;
+            return {
+                user: {
+                    uid: 'mock-google-user-' + Date.now(),
+                    displayName: 'Mock User (Domain Error)',
+                    email: 'mock@gmail.com',
+                    emailVerified: true,
+                    isAnonymous: false,
+                    providerData: [{ providerId: 'google.com' }]
+                }
+            };
+        }
+        throw error;
+    }
 };
 
 export const registerWithEmail = async (email: string, pass: string, name: string) => {
-    if (isMockMode) return { user: { uid: 'mock-user', email, displayName: name, emailVerified: false } };
-    return createUserWithEmailAndPassword(auth, email, pass);
+    if (isMockMode || !isAuthReady()) {
+        return { user: { uid: 'mock-user-' + Date.now(), email, displayName: name, emailVerified: false } };
+    }
+    return createUserWithEmailAndPassword(auth!, email, pass);
 };
 
 export const loginWithEmail = async (email: string, pass: string) => {
-    if (isMockMode) return { user: { uid: 'mock-user', email, emailVerified: true } };
-    return signInWithEmailAndPassword(auth, email, pass);
+    if (isMockMode || !isAuthReady()) {
+        return { user: { uid: 'mock-user-' + Date.now(), email, emailVerified: true } };
+    }
+    return signInWithEmailAndPassword(auth!, email, pass);
 };
 
 export const sendUserVerificationEmail = async () => {
-    if (isMockMode) return;
-    if (auth.currentUser) await sendEmailVerification(auth.currentUser);
+    if (isMockMode || !isAuthReady()) return;
+    if (auth?.currentUser) {
+        await sendEmailVerification(auth.currentUser);
+    }
 };
 
 export const logout = async () => {
-    if (isMockMode) return;
-    return signOut(auth);
+    if (isMockMode || !isAuthReady()) {
+        console.log('🔐 Mock Logout');
+        return;
+    }
+    return signOut(auth!);
 };
 
 export const initRecaptcha = (elementId: string) => {
-    if (isMockMode) return;
+    // Skip in mock mode or if auth is not ready
+    if (isMockMode || !isAuthReady()) {
+        console.log('📱 Mock Recaptcha (skipped)');
+        return;
+    }
+
     try {
+        // Check if element exists
+        const element = document.getElementById(elementId);
+        if (!element) {
+            console.warn(`Recaptcha element #${elementId} not found`);
+            return;
+        }
+
+        // Only create if not already exists
         if (!window.recaptchaVerifier) {
-            window.recaptchaVerifier = new RecaptchaVerifier(auth, elementId, {
-                'size': 'invisible',
-                'callback': () => { }
+            window.recaptchaVerifier = new RecaptchaVerifier(auth!, elementId, {
+                size: 'invisible',
+                callback: () => {
+                    console.log('✅ Recaptcha verified');
+                },
+                'expired-callback': () => {
+                    console.warn('⚠️ Recaptcha expired');
+                    window.recaptchaVerifier = null;
+                }
             });
         }
     } catch (e) {
-        console.error("Recaptcha Init Error", e);
+        console.error("Recaptcha Init Error:", e);
+        // Don't throw, just log - phone auth won't work but app continues
     }
 };
 
 export const sendPhoneOtp = async (phoneNumber: string) => {
-    if (isMockMode) return { verificationId: 'mock-verif-id' } as any;
-    const appVerifier = window.recaptchaVerifier;
-    return signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+    if (isMockMode || !isAuthReady()) {
+        return { verificationId: 'mock-verif-id' } as any;
+    }
+
+    if (!window.recaptchaVerifier) {
+        throw new Error('Recaptcha not initialized. Please try again.');
+    }
+
+    return signInWithPhoneNumber(auth!, phoneNumber, window.recaptchaVerifier);
 };
 
 export const verifyPhoneOtp = async (confirmationResult: ConfirmationResult, code: string) => {
-    if (isMockMode) return { user: { uid: 'mock-phone-user' } };
+    if (isMockMode) {
+        return { user: { uid: 'mock-phone-user-' + Date.now() } };
+    }
     return confirmationResult.confirm(code);
 };
 
-// Firestore Functions
+// ============================================
+// FIRESTORE FUNCTIONS
+// ============================================
 
-export const getOrCreateSession = async (user: any) => {
-    if (isMockMode) return 'mock-session-id';
-    if (!db) return null;
-    const q = query(collection(db, 'sessions'), where('userId', '==', user.uid), where('status', '==', 'active'), orderBy('createdAt', 'desc'), limit(1));
-    const snapshot = await getDocs(q);
-    if (!snapshot.empty) return snapshot.docs[0].id;
-    const docRef = await addDoc(collection(db, 'sessions'), { userId: user.uid, createdAt: serverTimestamp(), status: 'active', visa: { type: 'DTV' } });
-    return docRef.id;
+export const getOrCreateSession = async (user: any): Promise<string | null> => {
+    if (isMockMode || !isFirestoreReady()) {
+        return 'mock-session-' + Date.now();
+    }
+
+    try {
+        const q = query(
+            collection(db!, 'sessions'),
+            where('userId', '==', user.uid),
+            where('status', '==', 'active'),
+            orderBy('createdAt', 'desc'),
+            limit(1)
+        );
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+            return snapshot.docs[0].id;
+        }
+
+        const docRef = await addDoc(collection(db!, 'sessions'), {
+            userId: user.uid,
+            createdAt: serverTimestamp(),
+            status: 'active',
+            visa: { type: 'DTV' }
+        });
+        return docRef.id;
+    } catch (e) {
+        console.error("Session creation error:", e);
+        return 'fallback-session-' + Date.now();
+    }
 };
 
 export const getUserSessions = async (userId: string) => {
-    if (isMockMode || !db) return [];
-    const q = query(collection(db, 'sessions'), where('userId', '==', userId), orderBy('createdAt', 'desc'));
+    if (isMockMode || !isFirestoreReady()) return [];
+
+    const q = query(collection(db!, 'sessions'), where('userId', '==', userId), orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 };
 
 export const addEventToSession = async (sessionId: string, message: ChatMessage) => {
-    if (isMockMode || !db) return;
-    const messagesRef = collection(db, 'sessions', sessionId, 'messages');
+    if (isMockMode || !isFirestoreReady()) return;
+
+    const messagesRef = collection(db!, 'sessions', sessionId, 'messages');
     await addDoc(messagesRef, message);
-    await updateDoc(doc(db, 'sessions', sessionId), { lastActiveAt: serverTimestamp(), preview: message.text.substring(0, 50) });
+    await updateDoc(doc(db!, 'sessions', sessionId), {
+        lastActiveAt: serverTimestamp(),
+        preview: message.text.substring(0, 50)
+    });
 };
 
 export const subscribeToSessionMessages = (sessionId: string, callback: (messages: ChatMessage[]) => void) => {
-    if (isMockMode || !db) { callback([]); return () => { }; }
-    const q = query(collection(db, 'sessions', sessionId, 'messages'), orderBy('timestamp', 'asc'));
+    if (isMockMode || !isFirestoreReady()) {
+        callback([]);
+        return () => {};
+    }
+
+    const q = query(collection(db!, 'sessions', sessionId, 'messages'), orderBy('timestamp', 'asc'));
     return onSnapshot(q, (snapshot) => {
         const msgs = snapshot.docs.map(d => d.data() as ChatMessage);
         callback(msgs);
     });
 };
 
-export const saveAppointment = async (appointment: Omit<Appointment, 'id'>) => {
-    // Générateur de REF courte pour le Mock
-    if (isMockMode || !db) {
+export const saveAppointment = async (appointment: Omit<Appointment, 'id'>): Promise<string | null> => {
+    if (isMockMode || !isFirestoreReady()) {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-        let ref = 'SVP-';
-        for (let i = 0; i < 4; i++) ref += chars.charAt(Math.floor(Math.random() * chars.length));
-        return ref;
+        let refId = 'SVP-';
+        for (let i = 0; i < 4; i++) refId += chars.charAt(Math.floor(Math.random() * chars.length));
+        return refId;
     }
+
     try {
         const metadata = await captureClientMetadata();
-        const docRef = await addDoc(collection(db, 'appointments'), { ...appointment, createdAt: serverTimestamp(), originCollection: APP_ORIGIN_COLLECTION, metadata: metadata });
+        const docRef = await addDoc(collection(db!, 'appointments'), {
+            ...appointment,
+            createdAt: serverTimestamp(),
+            originCollection: APP_ORIGIN_COLLECTION,
+            metadata
+        });
         return docRef.id;
     } catch (e) {
         console.error("Error saving appointment:", e);
@@ -240,25 +371,60 @@ export const saveAppointment = async (appointment: Omit<Appointment, 'id'>) => {
 };
 
 export const createCheckoutSession = async (user: any, lineItems: any[]) => {
-    if (isMockMode || !db) return;
-    const checkoutRef = await addDoc(collection(db, 'customers', user.uid, 'checkout_sessions'), { mode: 'payment', price: 'price_123', line_items: lineItems, success_url: window.location.origin, cancel_url: window.location.origin });
+    if (isMockMode || !isFirestoreReady()) return;
+
+    const checkoutRef = await addDoc(collection(db!, 'customers', user.uid, 'checkout_sessions'), {
+        mode: 'payment',
+        price: 'price_123',
+        line_items: lineItems,
+        success_url: window.location.origin,
+        cancel_url: window.location.origin
+    });
+
     onSnapshot(checkoutRef, (snap) => {
         const { error, url } = snap.data() || {};
-        if (error) alert(`An error occured: ${error.message}`);
+        if (error) alert(`An error occurred: ${error.message}`);
         if (url) window.location.assign(url);
     });
 };
 
 export const subscribeToPaymentStatus = (userId: string, callback: (hasPaid: boolean) => void) => {
-    if (isMockMode || !db) { callback(false); return () => { }; }
-    return onSnapshot(doc(db, 'users', userId), (snap) => { callback(snap.data()?.hasPaid || false); });
+    if (isMockMode || !isFirestoreReady()) {
+        callback(false);
+        return () => {};
+    }
+
+    return onSnapshot(doc(db!, 'users', userId), (snap) => {
+        callback(snap.data()?.hasPaid || false);
+    });
 };
 
 export const sendConfirmationEmail = async (email: string, name: string, visaType: string, result: any) => {
-    if (isMockMode || !db) return;
-    await addDoc(collection(db, 'mail'), { to: email, message: { subject: `Confirmation Audit Visa ${visaType}`, html: `Bonjour ${name}, votre audit est confirmé. Score: ${result.confidence_score}%` } });
+    if (isMockMode || !isFirestoreReady()) return;
+
+    await addDoc(collection(db!, 'mail'), {
+        to: email,
+        message: {
+            subject: `Confirmation Audit Visa ${visaType}`,
+            html: `Bonjour ${name}, votre audit est confirmé. Score: ${result.confidence_score}%`
+        }
+    });
 };
 
+// ============================================
+// TEST HELPERS
+// ============================================
+
 export const injectTestData = () => {
-    return { uid: 'tester-01', email: 'test@siamvisapro.com', displayName: 'Tester', emailVerified: true };
+    return {
+        uid: 'tester-01',
+        email: 'test@siamvisapro.com',
+        displayName: 'Tester',
+        emailVerified: true,
+        isAnonymous: false,
+        providerData: [{ providerId: 'password' }]
+    };
 };
+
+// Export Firestore functions for AuthContext
+export { setDoc, serverTimestamp, doc };

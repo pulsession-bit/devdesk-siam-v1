@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { db } from '../services/firebase';
+import { db, isMockMode } from '../services/firebase';
 import { collection, getDocs, limit, query, orderBy } from 'firebase/firestore';
-import { ArrowLeft, RefreshCw, Database, AlertCircle } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Database, AlertCircle, Check } from 'lucide-react';
 
 interface DatabaseAuditProps {
     onBack: () => void;
@@ -16,9 +16,17 @@ const DatabaseAudit: React.FC<DatabaseAuditProps> = ({ onBack }) => {
     const fetchData = async () => {
         setLoading(true);
         setError(null);
+
+        // Check if Firestore is available
+        if (isMockMode || !db) {
+            setError("Base de données non disponible (mode démo).");
+            setLoading(false);
+            return;
+        }
+
         try {
             // Fetch last 50 appointments (optionally filtered)
-            let q = query(collection(db, selectedCollection), orderBy('createdAt', 'desc'), limit(50));
+            const q = query(collection(db, selectedCollection), orderBy('createdAt', 'desc'), limit(50));
             // Note: In a real app we would apply a "where" clause here, but for audit purposes we simply filter client-side or assume the user wants to see everything.
 
             const snapshot = await getDocs(q);
@@ -161,5 +169,3 @@ const DatabaseAudit: React.FC<DatabaseAuditProps> = ({ onBack }) => {
 };
 
 export default DatabaseAudit;
-
-import { Check } from 'lucide-react';

@@ -10,9 +10,11 @@ import {
   getOrCreateSession,
   captureClientMetadata,
   db,
-  isMockMode
+  isMockMode,
+  setDoc,
+  serverTimestamp,
+  doc
 } from '../services/firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;

@@ -259,6 +259,30 @@ User connecté ✅
 | `tailwind.config.js` | +60 lignes (animations, colors, shadows) |
 | `index.css` | Refonte complète (+150 lignes classes utilitaires) |
 | `contexts/AuthContext.tsx` | Refonte complète (session, logout, Firestore) |
+| `services/firebase.ts` | Refonte complète (null checks, isAuthReady/isFirestoreReady helpers) |
+| `components/DatabaseAudit.tsx` | Ajout check null pour Firestore, fix import |
+
+---
+
+## Corrections Firebase (Post-Audit)
+
+### Erreurs corrigées
+
+| Erreur | Cause | Solution |
+|--------|-------|----------|
+| `Cannot read properties of undefined (reading 'appVerificationDisabledForTesting')` | Recaptcha appelé avec `auth` null | Ajout `isAuthReady()` check dans `initRecaptcha()` |
+| `Cannot read properties of undefined (reading 'create')` | GoogleAuthProvider créé avec `auth` null | Check `!isAuthReady()` au début de `signInWithGoogle()` |
+| `Type 'null' is not assignable to type 'Firestore'` | `db` peut être null depuis refactoring | Ajout check `isMockMode \|\| !db` dans `DatabaseAudit.tsx` |
+
+### Nouveaux helpers Firebase
+
+```typescript
+// services/firebase.ts
+const isAuthReady = (): boolean => !isMockMode && auth !== null;
+const isFirestoreReady = (): boolean => !isMockMode && db !== null;
+```
+
+Ces helpers sont maintenant utilisés dans toutes les fonctions Firebase pour éviter les erreurs en mode démo ou quand Firebase n'est pas initialisé.
 
 ---
 
