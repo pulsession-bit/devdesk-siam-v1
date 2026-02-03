@@ -84,12 +84,7 @@ function App() {
     }
   });
 
-  // Auto-login tester on session load
-  React.useEffect(() => {
-    if (isSessionLoaded) {
-      loginAsTester();
-    }
-  }, [isSessionLoaded, loginAsTester]);
+
 
   // Handlers
   const handleAuditSubmit = useCallback(async (data: PreAuditData) => {
@@ -143,7 +138,7 @@ function App() {
               setStep(AppStep.WELCOME);
             }}
             isOpen={true}
-            onToggle={() => {}} // Sidebar toggle not implemented yet
+            onToggle={() => { }} // Sidebar toggle not implemented yet
             themeMode="EXECUTIVE"
             user={user}
           />
@@ -156,7 +151,7 @@ function App() {
               onStartConcierge={() => setStep(AppStep.AUDIT)}
               onLoginRequest={() => setIsLoginModalOpen(true)}
               onNavigateToSecurity={() => setStep(AppStep.SECURITY)}
-              onSelectTheme={() => {}} // Theme selection not implemented yet
+              onSelectTheme={() => { }} // Theme selection not implemented yet
             />
           )}
 
