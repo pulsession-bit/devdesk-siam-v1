@@ -264,6 +264,17 @@ User connecté ✅
 
 ---
 
+## Correctifs Déploiement & Environnement
+
+### Problème "Mock User" en Production
+- **Cause** : Variables d'environnement Firebase manquantes sur Vercel, forçant le mode "Mock" par sécurité.
+- **Solution** : Ajout des clés publiques Firebase dans `.env` pour le déploiement.
+- **Sécurité** : Renforcement des filtres de session (`AuthContext`) pour rejeter tout utilisateur "Mock" ou "Invité" persistant.
+
+### Configuration Google Cloud
+- Ajout du domaine Vercel aux **Authorized Domains** Firebase.
+- Ajout du domaine Vercel aux **API Key Restrictions** Google Cloud (pour éviter erreur 403).
+
 ## Corrections Firebase (Post-Audit)
 
 ### Erreurs corrigées
