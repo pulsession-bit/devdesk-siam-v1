@@ -122,7 +122,19 @@ const LandingGeneral: React.FC<LandingGeneralProps> = ({ onLoginRequest, onStart
                 <nav className="relative z-20 px-6 md:px-12 py-6 flex justify-between items-center border-b border-white/5 flex-wrap gap-4">
                     <div className="flex items-center gap-2"><div className="w-8 h-8 bg-[#FF9F1C] rounded-lg flex items-center justify-center text-[#051229]"><ShieldCheck size={18} strokeWidth={3} /></div><span className="text-white font-bold text-xl tracking-tight">SiamVisa<span className="text-[#FF9F1C]">Pro</span></span></div>
                     <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300"><button className="text-white font-bold">{t('nav.home')}</button><button onClick={onNavigateToDTV} className="hover:text-[#FF9F1C] transition-colors flex items-center gap-1">{t('nav.visas')} <ChevronDown size={14} /></button></div>
-                    <div className="flex items-center gap-4"><LanguageSelector variant="dropdown" /><button onClick={scrollToForm} className="bg-[#FF9F1C] hover:bg-amber-400 text-[#051229] px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all shadow-lg active:scale-95 hidden sm:block">{t('landing.btn_submit')}</button></div>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={onStartConcierge}
+                            className="hidden lg:flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full border border-white/10 transition-all backdrop-blur-md group"
+                        >
+                            <div className="w-8 h-8 rounded-full border border-white/20 overflow-hidden relative">
+                                <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=200&auto=format&fit=crop" className="w-full h-full object-cover" alt="Supansa" />
+                            </div>
+                            <span className="text-xs font-bold uppercase tracking-wider pr-2 group-hover:text-[#FF9F1C] transition-colors">{t('sidebar.talk_supansa') || 'Parler à l\'expert'}</span>
+                        </button>
+                        <LanguageSelector variant="dropdown" />
+                        <button onClick={scrollToForm} className="bg-[#FF9F1C] hover:bg-amber-400 text-[#051229] px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all shadow-lg active:scale-95 hidden sm:block">{t('landing.btn_submit')}</button>
+                    </div>
                 </nav>
                 <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 pb-20 pt-10">
                     <div className="mb-8 animate-in slide-in-from-top-4 duration-700"><span className="px-5 py-2 rounded-full border border-[#FF9F1C]/50 bg-[#FF9F1C]/10 text-[#FF9F1C] text-[10px] font-black uppercase tracking-[0.25em] backdrop-blur-sm">{t('welcome.new_opportunity')}</span></div>
